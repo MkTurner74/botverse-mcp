@@ -1,0 +1,40 @@
+{
+  "name": "botverse-mcp",
+  "version": "1.0.3",
+  "mcpName": "io.github.MkTurner74/botverse",
+  "description": "MCP server for Botverse — video transcoding and document conversion for AI agents. $0.25/transcode · $0.05/convert · No AWS required.",
+  "main": "index.js",
+  "bin": {
+    "botverse-mcp": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MkTurner74/botverse-mcp.git"
+  },
+  "homepage": "https://botverse.cloud",
+  "bugs": {
+    "url": "https://github.com/MkTurner74/botverse-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agents",
+    "video",
+    "transcoding",
+    "document",
+    "conversion",
+    "botverse",
+    "claude",
+    "llm"
+  ],
+  "author": "Entertainment Technologists Inc. <support@botverse.cloud>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.MkTurner74/botverse",
+  "description": "Video transcoding and document conversion for AI agents. Per-job billing, no infrastructure.",
+  "repository": {
+    "url": "https://github.com/MkTurner74/botverse-mcp",
+    "source": "github"
+  },
+  "version": "1.0.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "botverse-mcp",
+      "version": "1.0.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "BOTVERSE_API_KEY",
+          "description": "Your Botverse API key (bv_live_...). Generate at https://botverse.cloud/dashboard/api-keys",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "BOTVERSE_CONNECTOR_URL",
+          "description": "Your Botverse connector URL (https://botverse.cloud/mcp?token=bv_sess_...). Alternative to API key — recommended for claude.ai and browser clients.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
