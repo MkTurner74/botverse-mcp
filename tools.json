@@ -1,0 +1,750 @@
+[
+  {
+    "name": "get_upload_url",
+    "description": "Get a presigned PUT URL to upload any file — video, audio, or document (markdown, HTML, DOCX, etc.). The URL expires in 15 minutes. PUT raw file bytes directly to the URL. After upload, pass the object_key to transcode_video (for video) or convert_file (for documents).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string",
+          "description": "Original filename including extension, e.g. report.md or footage.mp4"
+        },
+        "content_type": {
+          "type": "string",
+          "description": "MIME type. Video: \"video/mp4\". Documents: \"text/markdown\", \"text/html\", \"application/vnd.openxmlformats-officedocument.wordprocessingml.document\", \"text/plain\"."
+        }
+      },
+      "required": [
+        "filename",
+        "content_type"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "upload_url": {
+          "type": "string",
+          "description": "Presigned HTTPS PUT URL. Send raw file bytes as the request body."
+        },
+        "object_key": {
+          "type": "string",
+          "description": "storage object key — pass this to transcode_video or convert_file."
+        },
+        "expires_in": {
+          "type": "number",
+          "description": "Seconds until the upload URL expires (900 = 15 minutes)."
+        }
+      },
+      "required": [
+        "upload_url",
+        "object_key",
+        "expires_in"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "transcode_from_url",
+    "description": "Offload a video or audio transcode to Botverse using a public URL — no upload step needed. Accepts Dropbox, Google Drive, OneDrive, SharePoint, and Box share links directly — pass the share URL as-is, no manual conversion needed. Also works with any direct HTTPS download URL (CDN, object storage, etc.). Limited to 2 GB. Returns a job_id immediately. IMPORTANT: tell the user the job_id right away so they can track it. Then poll get_job_status every 5 seconds. Large video files (>100 MB) can take 5–15 minutes — keep polling until status is 'complete' or 'failed', no matter how many polls it takes. Never give up early. Wallet debited on completion. Use options.start_time and options.duration to trim — e.g. start_time='00:01:00', duration=120 for a 2-minute clip.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_url": {
+          "type": "string",
+          "description": "Public HTTPS URL of the source video or audio file."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "mp4",
+            "webm",
+            "mov_prores",
+            "mp3",
+            "gif"
+          ],
+          "description": "Target output format. One of: mp4 (H.264), webm (VP9), mov_prores (ProRes 422), mp3 (audio extraction), gif."
+        },
+        "options": {
+          "type": "object",
+          "description": "Optional encoding parameters. All are optional.",
+          "properties": {
+            "start_time": {
+              "type": "string",
+              "description": "Seek to this position before encoding, e.g. '00:01:30' or '90'. Useful for trimming long files."
+            },
+            "duration": {
+              "type": "number",
+              "description": "Encode only this many seconds of content after start_time. Use with start_time to extract a clip."
+            },
+            "width": {
+              "type": "number",
+              "description": "Output width in pixels. Height scales proportionally if only width is set."
+            },
+            "height": {
+              "type": "number",
+              "description": "Output height in pixels. Width scales proportionally if only height is set."
+            },
+            "bitrate": {
+              "type": "string",
+              "description": "Video bitrate, e.g. '2M' for 2 Mbps."
+            },
+            "framerate": {
+              "type": "number",
+              "description": "Output frame rate, e.g. 24 or 30."
+            },
+            "audio_bitrate": {
+              "type": "string",
+              "description": "Audio bitrate for mp3 output, e.g. '128k' or '320k'."
+            },
+            "h264_profile": {
+              "type": "string",
+              "enum": [
+                "baseline",
+                "main",
+                "high"
+              ],
+              "description": "H.264 encoding profile for mp4 output. baseline = max device compatibility (mobile, streaming, older hardware). main = balanced (default). high = best quality for modern playback."
+            }
+          }
+        }
+      },
+      "required": [
+        "source_url",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state — always queued or processing immediately after submission."
+        },
+        "estimated_seconds": {
+          "type": "number",
+          "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "transcode_video",
+    "description": "Offload a video transcode to Botverse — encoding runs server-side so you can continue with other tasks. Returns a job_id immediately. Source must be ≤ 10 minutes and ≤ 5 GB. Poll get_job_status every 5 seconds until 'complete', then get_download_url. Wallet debited on completion.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "object_key": {
+          "type": "string",
+          "description": "storage object key returned by get_upload_url."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "mp4",
+            "webm",
+            "mov_prores",
+            "mp3",
+            "gif"
+          ],
+          "description": "Target output format. One of: mp4 (H.264), webm (VP9), mov_prores (ProRes 422), mp3 (audio extraction), gif."
+        },
+        "options": {
+          "type": "object",
+          "description": "Optional encoding parameters. All are optional.",
+          "properties": {
+            "start_time": {
+              "type": "string",
+              "description": "Seek to this position before encoding, e.g. '00:01:30' or '90'."
+            },
+            "duration": {
+              "type": "number",
+              "description": "Encode only this many seconds of content after start_time."
+            },
+            "width": {
+              "type": "number",
+              "description": "Output width in pixels."
+            },
+            "height": {
+              "type": "number",
+              "description": "Output height in pixels."
+            },
+            "bitrate": {
+              "type": "string",
+              "description": "Video bitrate, e.g. '2M'."
+            },
+            "framerate": {
+              "type": "number",
+              "description": "Output frame rate, e.g. 24 or 30."
+            },
+            "audio_bitrate": {
+              "type": "string",
+              "description": "Audio bitrate for mp3 output, e.g. '128k'."
+            },
+            "h264_profile": {
+              "type": "string",
+              "enum": [
+                "baseline",
+                "main",
+                "high"
+              ],
+              "description": "H.264 encoding profile for mp4 output. baseline = max device compatibility. main = balanced (default). high = best quality for modern playback."
+            }
+          }
+        }
+      },
+      "required": [
+        "object_key",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state — always queued or processing immediately after submission."
+        },
+        "estimated_seconds": {
+          "type": "number",
+          "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_job_status",
+    "description": "Poll the status of a transcode or convert job. Call every 5 seconds until status is 'complete' or 'failed'. Status 'queued' or 'processing' is normal — large files take 5–15 minutes. Keep polling indefinitely until a terminal status is reached. Do not stop polling after a fixed number of attempts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Job ID returned by transcode_video, transcode_from_url, convert_file, convert_from_url, or convert_content."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "The job identifier."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing",
+            "complete",
+            "failed"
+          ],
+          "description": "Current job state."
+        },
+        "progress_pct": {
+          "type": "number",
+          "description": "Encoding progress 0–100. Only present while status is 'processing'."
+        },
+        "output_key": {
+          "type": "string",
+          "description": "storage object key of the completed output. Present when status is 'complete'. Pass to get_download_url."
+        },
+        "cost_usd": {
+          "type": "number",
+          "description": "Amount debited from the wallet on completion, in USD."
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Human-readable error description. Present when status is 'failed'."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_download_url",
+    "description": "Get a presigned HTTPS URL to download the completed output file. Call after get_job_status returns 'complete'. URL expires in 24 hours.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Job ID from transcode_video, transcode_from_url, or any convert tool."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "download_url": {
+          "type": "string",
+          "description": "Presigned HTTPS GET URL for the output file. Valid for 24 hours."
+        },
+        "filename": {
+          "type": "string",
+          "description": "Suggested filename for the downloaded file including extension."
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the download URL expires."
+        },
+        "size_bytes": {
+          "type": "number",
+          "description": "File size of the output in bytes."
+        }
+      },
+      "required": [
+        "download_url",
+        "filename",
+        "expires_at"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_wallet_balance",
+    "description": "Check the current prepaid wallet balance for this Botverse account. Use before large batch jobs to confirm sufficient funds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "balance_usd": {
+          "type": "number",
+          "description": "Current wallet balance in USD."
+        },
+        "auto_refill_enabled": {
+          "type": "boolean",
+          "description": "Whether automatic wallet top-up is enabled."
+        },
+        "refill_threshold_usd": {
+          "type": "number",
+          "description": "Balance threshold in USD that triggers an auto-refill, if enabled."
+        },
+        "refill_amount_usd": {
+          "type": "number",
+          "description": "Amount in USD added on each auto-refill, if enabled."
+        }
+      },
+      "required": [
+        "balance_usd",
+        "auto_refill_enabled"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "convert_from_url",
+    "description": "Offload a document conversion to Botverse — runs server-side in seconds, returns a download link, and frees you to continue with other tasks while it processes. Use this when the source document is at a public URL — including Dropbox, Google Drive, OneDrive, SharePoint, and Box share links (pass the share URL as-is). If you already have the content as a string, use convert_content instead — no upload step needed. Supported inputs: md, html, rst, txt, docx. Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx (tables extracted). Returns a job_id immediately. Poll get_job_status every 5s until 'complete', then get_download_url. Flat fee $0.05 per file.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_url": {
+          "type": "string",
+          "description": "Public HTTPS URL of the source document."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "docx",
+            "html",
+            "txt",
+            "md",
+            "rst",
+            "pdf",
+            "xlsx"
+          ],
+          "description": "Target format: docx | html | txt | md | rst | pdf | xlsx"
+        }
+      },
+      "required": [
+        "source_url",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state — always queued or processing immediately after submission."
+        },
+        "estimated_seconds": {
+          "type": "number",
+          "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "convert_file",
+    "description": "Offload a document conversion to Botverse using an already-uploaded file. Workflow: (1) call get_upload_url to get a presigned upload URL, (2) PUT the raw file bytes to that URL, (3) call convert_file with the object_key — Botverse handles the rest server-side. Returns a job_id immediately so you can continue with other tasks while conversion runs. Supported inputs: md, html, rst, txt, docx. Supported outputs: docx, pdf, html, txt, md, rst, xlsx. Poll get_job_status until complete, then get_download_url. Flat fee $0.05 per file.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "object_key": {
+          "type": "string",
+          "description": "The object_key returned by get_upload_url."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "docx",
+            "html",
+            "txt",
+            "md",
+            "rst",
+            "pdf",
+            "xlsx"
+          ],
+          "description": "Target format: docx | html | txt | md | rst | pdf | xlsx"
+        }
+      },
+      "required": [
+        "object_key",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state — always queued or processing immediately after submission."
+        },
+        "estimated_seconds": {
+          "type": "number",
+          "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "submit_workflow",
+    "description": "Submit a multi-step workflow to the Botverse workflow engine. Steps execute in dependency order; parallel branches (multiple steps with the same depends_on) run simultaneously. Returns a workflow_id immediately — poll get_workflow_status every 5–10 seconds until terminal. Requires auto-refill to be enabled at botverse.cloud/dashboard/billing to prevent mid-workflow balance failures. Workflow definition uses BWDL (Botverse Workflow Definition Language) — schema at botverse.cloud/schemas/workflow/v1.json.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "type": "object",
+          "description": "BWDL workflow definition. Must include workflow_id (string) and steps (array). Each step needs id, tool, and inputs."
+        }
+      },
+      "required": [
+        "definition"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string",
+          "description": "Unique workflow identifier. Pass to get_workflow_status."
+        },
+        "status": {
+          "type": "string",
+          "description": "Initial status: QUEUED or PROCESSING."
+        },
+        "step_count": {
+          "type": "number",
+          "description": "Number of steps in the workflow."
+        },
+        "already_exists": {
+          "type": "boolean",
+          "description": "True if this workflow_id was already submitted — idempotent resubmit."
+        }
+      },
+      "required": [
+        "workflow_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_workflow_status",
+    "description": "Get the current status of a workflow and all its steps. Each call may advance the workflow by dispatching steps whose dependencies have completed. Poll every 5–10 seconds until status is COMPLETED, FAILED, PARTIALLY_FAILED, or CANCELLED.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string",
+          "description": "Workflow ID returned by submit_workflow."
+        }
+      },
+      "required": [
+        "workflow_id"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "PROCESSING",
+            "COMPLETED",
+            "PARTIALLY_FAILED",
+            "FAILED",
+            "CANCELLED"
+          ]
+        },
+        "total_cost_usd": {
+          "type": "number"
+        },
+        "steps": {
+          "type": "array",
+          "description": "Array of step status objects."
+        },
+        "completed_at": {
+          "type": "string",
+          "description": "ISO timestamp when workflow reached terminal state."
+        }
+      },
+      "required": [
+        "workflow_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "cancel_workflow",
+    "description": "Cancel an in-progress workflow. All queued and dispatched steps are marked CANCELLED. Completed steps are not reversed. You are only billed for steps that completed before cancellation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string",
+          "description": "Workflow ID to cancel."
+        }
+      },
+      "required": [
+        "workflow_id"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string"
+        },
+        "cancelled": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflow_id",
+        "cancelled"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "convert_content",
+    "description": "Offload an inline document conversion to Botverse — pass the content directly as a string. ONLY use this tool for content you generated yourself (e.g. Markdown you just wrote). HARD LIMIT: content must be under 10,000 characters. If the content is longer than 10,000 characters, or came from an uploaded or external file, DO NOT use this tool — tell the user to make the file available at a public URL (Google Drive share link, Dropbox, object storage, etc.) and use convert_from_url instead. Supported inputs: md, html, rst, txt (plain text), docx (base64). Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx. Flat fee $0.05 per file.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The file content as a plain text string (for md, html, rst, txt) or base64-encoded bytes (for docx)."
+        },
+        "input_format": {
+          "type": "string",
+          "enum": [
+            "md",
+            "html",
+            "rst",
+            "txt",
+            "docx"
+          ],
+          "description": "Source format of the content."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "docx",
+            "html",
+            "txt",
+            "md",
+            "rst",
+            "pdf",
+            "xlsx"
+          ],
+          "description": "Target format: docx | html | txt | md | rst | pdf | xlsx"
+        },
+        "encoding": {
+          "type": "string",
+          "enum": [
+            "text",
+            "base64"
+          ],
+          "description": "Encoding of the content field. Defaults to \"text\". Use \"base64\" for binary inputs like .docx."
+        }
+      },
+      "required": [
+        "content",
+        "input_format",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state — always queued or processing immediately after submission."
+        },
+        "estimated_seconds": {
+          "type": "number",
+          "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  }
+]
