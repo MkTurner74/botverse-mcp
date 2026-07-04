@@ -152,7 +152,7 @@
   },
   {
     "name": "transcode_video",
-    "description": "Offload a video transcode to Botverse — encoding runs server-side so you can continue with other tasks. Returns a job_id immediately. Source must be ≤ 10 minutes and ≤ 5 GB. Poll get_job_status every 5 seconds until 'complete', then get_download_url. Wallet debited on completion.",
+    "description": "Offload a video transcode to Botverse — encoding runs server-side so you can continue with other tasks. Returns a job_id immediately. Source must be ≤ 60 minutes and ≤ 2 GB. Poll get_job_status every 5 seconds until 'complete', then get_download_url. Wallet debited on completion.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -254,13 +254,13 @@
   },
   {
     "name": "get_job_status",
-    "description": "Poll the status of a transcode or convert job. Call every 5 seconds until status is 'complete' or 'failed'. Status 'queued' or 'processing' is normal — large files take 5–15 minutes. Keep polling indefinitely until a terminal status is reached. Do not stop polling after a fixed number of attempts.",
+    "description": "Poll the status of a transcode, convert, or transcribe job. Call every 5 seconds until status is 'complete' or 'failed'. Status 'queued' or 'processing' is normal — large files take 5–15 minutes; transcribe reports a live stage (converting audio → transcribing → AI augmenting → rendering). Keep polling indefinitely until a terminal status is reached. Do not stop polling after a fixed number of attempts.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "job_id": {
           "type": "string",
-          "description": "Job ID returned by transcode_video, transcode_from_url, convert_file, convert_from_url, or convert_content."
+          "description": "Job ID returned by transcode_video, transcode_from_url, convert_file, convert_from_url, convert_content, transcribe_from_url, or transcribe_media."
         }
       },
       "required": [
@@ -321,7 +321,7 @@
       "properties": {
         "job_id": {
           "type": "string",
-          "description": "Job ID from transcode_video, transcode_from_url, or any convert tool."
+          "description": "Job ID from transcode_video, transcode_from_url, any convert tool, or any transcribe tool."
         }
       },
       "required": [
@@ -525,7 +525,7 @@
   },
   {
     "name": "submit_workflow",
-    "description": "Submit a multi-step workflow to the Botverse workflow engine. Steps execute in dependency order; parallel branches (multiple steps with the same depends_on) run simultaneously. Returns a workflow_id immediately — poll get_workflow_status every 5–10 seconds until terminal. Requires auto-refill to be enabled at botverse.cloud/dashboard/billing to prevent mid-workflow balance failures. Workflow definition uses BWDL (Botverse Workflow Definition Language) — schema at botverse.cloud/schemas/workflow/v1.json.",
+    "description": "Submit a multi-step workflow to the Botverse workflow engine. Steps execute in dependency order; parallel branches (multiple steps with the same depends_on) run simultaneously. Returns a workflow_id immediately — poll get_workflow_status every 5–10 seconds until terminal. INTER-STEP REFERENCES: pass a prior step's output into a later step with the string \"$.steps.<step_id>.output_key\" (e.g. a docx→pdf chain: step to_pdf has depends_on: [\"to_docx\"] and inputs {\"source_url\": \"$.steps.to_docx.output_key\", \"input_format\": \"docx\", \"output_format\": \"pdf\"} using tool convert_from_url). Workflow params are referenced as \"$.params.<name>\". No other template syntax (${...} etc.) is supported. BILLING: convert-only workflows run on wallet balance ($0.05/step). Workflows containing transcode or transcribe steps require auto-refill to be enabled at botverse.cloud/dashboard/billing (their cost scales with source duration). Workflow definition uses BWDL (Botverse Workflow Definition Language) — schema at botverse.cloud/schemas/workflow/v1.json.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -733,6 +733,126 @@
         "estimated_seconds": {
           "type": "number",
           "description": "Rough estimated processing time in seconds. Actual time may vary."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "transcribe_from_url",
+    "description": "Transcribe a video or audio file from a public HTTPS URL into a speaker-labelled transcript — ONE call does everything. Source can be a direct HTTPS URL or a Dropbox / Google Drive / Box share link (auto-resolved); OneDrive and SharePoint share links are unreliable — use a direct download URL, or upload via get_upload_url + transcribe_media. Internally: converts to audio, runs speech-to-text with speaker diarization, uses AI to name the speakers from your attendee list, and renders the document. Pass options.attendees (names, optional gender/role) and it tags who said what. Output formats: txt, json, srt, vtt, docx, pdf. CONSENT: you must have all parties' consent to record/transcribe. Returns a job_id immediately — report it to the user, then poll get_job_status (it reports a live stage: converting audio → transcribing → AI augmenting → rendering) until 'complete', then get_download_url. ~$0.08/audio-minute (~$5/hour), diarization + naming included.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_url": {
+          "type": "string",
+          "description": "Public HTTPS URL of the source video or audio file."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "txt",
+            "json",
+            "srt",
+            "vtt",
+            "docx",
+            "pdf"
+          ],
+          "description": "Primary deliverable format."
+        },
+        "options": {
+          "type": "object",
+          "description": "Optional. attendees: [{name, gender?, role?}] to name speakers; language (BCP-47 or 'auto'); diarize (default true); max_speakers; title; include_timestamps; also_deliver: extra formats in the same job."
+        }
+      },
+      "required": [
+        "source_url",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state."
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "transcribe_media",
+    "description": "Transcribe an already-uploaded video/audio file (from get_upload_url) into a speaker-labelled transcript. Same one-call pipeline and options as transcribe_from_url (attendee naming, srt/vtt, formatted docx/pdf). Use for local files or files larger than a URL fetch allows (up to 2 GB). CONSENT: you must have all parties' consent. Poll get_job_status (live stage) until complete, then get_download_url. ~$0.08/audio-minute (~$5/hour).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "object_key": {
+          "type": "string",
+          "description": "The object_key returned by get_upload_url."
+        },
+        "output_format": {
+          "type": "string",
+          "enum": [
+            "txt",
+            "json",
+            "srt",
+            "vtt",
+            "docx",
+            "pdf"
+          ],
+          "description": "Primary deliverable format."
+        },
+        "options": {
+          "type": "object",
+          "description": "Same options object as transcribe_from_url (attendees, language, diarize, max_speakers, title, include_timestamps, also_deliver)."
+        }
+      },
+      "required": [
+        "object_key",
+        "output_format"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Unique identifier for this job. Pass to get_job_status and get_download_url."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "processing"
+          ],
+          "description": "Initial job state."
         }
       },
       "required": [

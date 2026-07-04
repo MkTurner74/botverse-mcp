@@ -1,6 +1,6 @@
 {
   "name": "botverse-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "mcpName": "io.github.MkTurner74/botverse",
   "description": "Botverse for AI agents and the command line — video transcoding and document conversion. MCP server + `botverse` CLI. $0.25/transcode · $0.05/convert · No AWS required.",
   "main": "index.js",

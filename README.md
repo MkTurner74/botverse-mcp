@@ -8,12 +8,13 @@ MCP server **and command-line tool** for [Botverse](https://botverse.cloud) — 
 
 - **Video transcoding** — MP4 (H.264), WebM (VP9), ProRes 422, GIF, MP3 extraction · $0.25/job
 - **Document conversion** — Markdown ↔ DOCX ↔ PDF ↔ HTML ↔ XLSX · $0.05/file
+- **Transcription** — speaker-labelled transcripts (diarization + AI speaker naming) → txt/srt/vtt/docx/pdf · ~$5/hour
 
 Two ways to use it: an **MCP server** for your AI agents, and a **`botverse` CLI** for the shell — evaluation, CI/CD, cron, scripts, and local coding agents. No AWS. No FFmpeg. No infrastructure.
 
 ## Setup
 
-1. Sign up at [botverse.cloud](https://botverse.cloud) — $5 minimum top-up, no monthly fees
+1. Sign up at [botverse.cloud](https://botverse.cloud) — **free to try: $1 credit on signup, no card required.** A card + 2FA are only needed at your first top-up ($5 min). No monthly fees.
 2. Get an API key or connector URL from your dashboard
 3. Add to your MCP client config
 
