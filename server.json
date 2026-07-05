@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.MkTurner74/botverse",
-  "description": "Transcode video, convert documents, and transcribe audio (AI speaker-naming) for AI agents via MCP. Free to try — $1 credit, no card. Prepaid wallet, per-job billing, no AWS.",
+  "description": "Transcode video, convert docs & transcribe audio for AI agents. Free $1 trial, no card.",
   "repository": {
     "url": "https://github.com/MkTurner74/botverse-mcp",
     "source": "github"
