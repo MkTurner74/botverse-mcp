@@ -1,0 +1,38 @@
+name: Publish to MCP Registry
+
+# Auto-publishes server.json to the official MCP Registry whenever it changes on
+# master. Auth is GitHub Actions OIDC (no PAT, no interactive login) — the registry
+# maps the OIDC token's repo owner (MkTurner74) to the io.github.MkTurner74 namespace.
+# NOTE: the registry rejects a re-publish of an already-published version, so bump
+# the "version" in server.json (and the npm package) when you change it.
+
+on:
+  push:
+    branches: [master]
+    paths: ["server.json"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # required for GitHub OIDC
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        run: |
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz" \
+            | tar -xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/mcp-publisher
+          mcp-publisher --help >/dev/null
+
+      - name: Validate server.json
+        run: mcp-publisher validate
+
+      - name: Authenticate (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+
+      - name: Publish
+        run: mcp-publisher publish
