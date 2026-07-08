@@ -50,7 +50,7 @@
   },
   {
     "name": "transcode_from_url",
-    "description": "Offload a video or audio transcode to Botverse using a public URL — no upload step needed. Accepts Dropbox, Google Drive, OneDrive, SharePoint, and Box share links directly — pass the share URL as-is, no manual conversion needed. Also works with any direct HTTPS download URL (CDN, object storage, etc.). Limited to 2 GB. Returns a job_id immediately. IMPORTANT: tell the user the job_id right away so they can track it. Then poll get_job_status every 5 seconds. Large video files (>100 MB) can take 5–15 minutes — keep polling until status is 'complete' or 'failed', no matter how many polls it takes. Never give up early. Wallet debited on completion. Use options.start_time and options.duration to trim — e.g. start_time='00:01:00', duration=120 for a 2-minute clip.",
+    "description": "Offload a video or audio transcode to Botverse using a public URL — no upload step needed. Accepts share links from Dropbox, Google Drive, OneDrive (personal or business), SharePoint, and Box directly — pass the share URL as-is; they auto-resolve to the file. Also works with any direct HTTPS download URL. Limited to 2 GB. Returns a job_id immediately. IMPORTANT: tell the user the job_id right away so they can track it. Then poll get_job_status every 5 seconds. Large video files (>100 MB) can take 5–15 minutes — keep polling until status is 'complete' or 'failed', no matter how many polls it takes. Never give up early. Wallet debited on completion. Use options.start_time and options.duration to trim — e.g. start_time='00:01:00', duration=120 for a 2-minute clip.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -403,7 +403,7 @@
   },
   {
     "name": "convert_from_url",
-    "description": "Offload a document conversion to Botverse — runs server-side in seconds, returns a download link, and frees you to continue with other tasks while it processes. Use this when the source document is at a public URL — including Dropbox, Google Drive, OneDrive, SharePoint, and Box share links (pass the share URL as-is). If you already have the content as a string, use convert_content instead — no upload step needed. Supported inputs: md, html, rst, txt, docx. Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx (tables extracted). Returns a job_id immediately. Poll get_job_status every 5s until 'complete', then get_download_url. Flat fee $0.05 per file.",
+    "description": "Offload a document conversion to Botverse — runs server-side in seconds, returns a download link, and frees you to continue with other tasks while it processes. Use this when the source document is at a public URL. Accepts share links from Dropbox, Google Drive, OneDrive (personal or business), SharePoint, and Box directly — pass the share URL as-is; they auto-resolve to the file. Also works with any direct HTTPS download URL. If you already have the content as a string, use convert_content instead — no upload step needed. Supported inputs: md, html, rst, txt, doc, docx, pptx, ppt, xlsx (PowerPoint inputs convert to pdf only). Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx (tables extracted). Office documents (Word, PowerPoint, Excel) render to PDF with full page layout — Excel PDFs honor the workbook's print areas and page setup; optional single_page_sheets scales each sheet onto exactly one PDF page. Returns a job_id immediately. Poll get_job_status every 5s until 'complete', then get_download_url. Flat fee $0.05 per file.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -423,6 +423,10 @@
             "xlsx"
           ],
           "description": "Target format: docx | html | txt | md | rst | pdf | xlsx"
+        },
+        "single_page_sheets": {
+          "type": "boolean",
+          "description": "Excel→PDF only: scale each sheet onto exactly one PDF page instead of using the workbook's print areas/page setup. Avoid for very tall sheets (1000+ rows)."
         }
       },
       "required": [
@@ -464,7 +468,7 @@
   },
   {
     "name": "convert_file",
-    "description": "Offload a document conversion to Botverse using an already-uploaded file. Workflow: (1) call get_upload_url to get a presigned upload URL, (2) PUT the raw file bytes to that URL, (3) call convert_file with the object_key — Botverse handles the rest server-side. Returns a job_id immediately so you can continue with other tasks while conversion runs. Supported inputs: md, html, rst, txt, docx. Supported outputs: docx, pdf, html, txt, md, rst, xlsx. Poll get_job_status until complete, then get_download_url. Flat fee $0.05 per file.",
+    "description": "Offload a document conversion to Botverse using an already-uploaded file. Workflow: (1) call get_upload_url to get a presigned upload URL, (2) PUT the raw file bytes to that URL, (3) call convert_file with the object_key — Botverse handles the rest server-side. Returns a job_id immediately so you can continue with other tasks while conversion runs. Supported inputs: md, html, rst, txt, doc, docx, pptx, ppt, xlsx (PowerPoint inputs convert to pdf only). Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx (tables extracted). Office documents (Word, PowerPoint, Excel) render to PDF with full page layout — Excel PDFs honor the workbook's print areas and page setup; optional single_page_sheets scales each sheet onto exactly one PDF page. Poll get_job_status until complete, then get_download_url. Flat fee $0.05 per file.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -484,6 +488,10 @@
             "xlsx"
           ],
           "description": "Target format: docx | html | txt | md | rst | pdf | xlsx"
+        },
+        "single_page_sheets": {
+          "type": "boolean",
+          "description": "Excel→PDF only: scale each sheet onto exactly one PDF page instead of using the workbook's print areas/page setup. Avoid for very tall sheets (1000+ rows)."
         }
       },
       "required": [
@@ -668,7 +676,7 @@
   },
   {
     "name": "convert_content",
-    "description": "Offload an inline document conversion to Botverse — pass the content directly as a string. ONLY use this tool for content you generated yourself (e.g. Markdown you just wrote). HARD LIMIT: content must be under 10,000 characters. If the content is longer than 10,000 characters, or came from an uploaded or external file, DO NOT use this tool — tell the user to make the file available at a public URL (Google Drive share link, Dropbox, object storage, etc.) and use convert_from_url instead. Supported inputs: md, html, rst, txt (plain text), docx (base64). Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx. Flat fee $0.05 per file.",
+    "description": "Offload an inline document conversion to Botverse — pass the content directly as a string. PREFER this when you already have the content (text, or base64 for binary Office files). Inline limit: 4 MB. For larger files, use convert_from_url (public URL or cloud share link) or get_upload_url + convert_file. Supported inputs: md, html, rst, txt, doc, docx, pptx, ppt, xlsx (PowerPoint inputs convert to pdf only). Supported outputs: docx (Word), pdf, html, txt, md, rst, xlsx (tables extracted). Office documents (Word, PowerPoint, Excel) render to PDF with full page layout — Excel PDFs honor the workbook's print areas and page setup; optional single_page_sheets scales each sheet onto exactly one PDF page. Binary inputs (doc, docx, pptx, ppt, xlsx) require encoding \"base64\". Flat fee $0.05 per file.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -683,7 +691,11 @@
             "html",
             "rst",
             "txt",
-            "docx"
+            "doc",
+            "docx",
+            "pptx",
+            "ppt",
+            "xlsx"
           ],
           "description": "Source format of the content."
         },
@@ -707,6 +719,10 @@
             "base64"
           ],
           "description": "Encoding of the content field. Defaults to \"text\". Use \"base64\" for binary inputs like .docx."
+        },
+        "single_page_sheets": {
+          "type": "boolean",
+          "description": "Excel→PDF only: scale each sheet onto exactly one PDF page instead of using the workbook's print areas/page setup. Avoid for very tall sheets (1000+ rows)."
         }
       },
       "required": [
@@ -749,7 +765,7 @@
   },
   {
     "name": "transcribe_from_url",
-    "description": "Transcribe a video or audio file from a public HTTPS URL into a speaker-labelled transcript — ONE call does everything. Source can be a direct HTTPS URL or a Dropbox / Google Drive / Box share link (auto-resolved); OneDrive and SharePoint share links are unreliable — use a direct download URL, or upload via get_upload_url + transcribe_media. Internally: converts to audio, runs speech-to-text with speaker diarization, uses AI to name the speakers from your attendee list, and renders the document. Pass options.attendees (names, optional gender/role) and it tags who said what. Output formats: txt, json, srt, vtt, docx, pdf. CONSENT: you must have all parties' consent to record/transcribe. Returns a job_id immediately — report it to the user, then poll get_job_status (it reports a live stage: converting audio → transcribing → AI augmenting → rendering) until 'complete', then get_download_url. ~$0.08/audio-minute (~$5/hour), diarization + naming included.",
+    "description": "Transcribe a video or audio file from a public HTTPS URL into a speaker-labelled transcript — ONE call does everything. Accepts share links from Dropbox, Google Drive, OneDrive (personal or business), SharePoint, and Box directly — pass the share URL as-is; they auto-resolve to the file. Also works with any direct HTTPS download URL. Internally: converts to audio, runs speech-to-text with speaker diarization, uses AI to name the speakers from your attendee list, and renders the document. Pass options.attendees (names, optional gender/role) and it tags who said what. Output formats: txt, json, srt, vtt, docx, pdf. CONSENT: you must have all parties' consent to record/transcribe. Returns a job_id immediately — report it to the user, then poll get_job_status (it reports a live stage: converting audio → transcribing → AI augmenting → rendering) until 'complete', then get_download_url. ~$0.08/audio-minute (~$5/hour), diarization + naming included.",
     "inputSchema": {
       "type": "object",
       "properties": {
