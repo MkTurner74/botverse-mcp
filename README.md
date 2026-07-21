@@ -8,7 +8,7 @@ MCP server **and command-line tool** for [Botverse](https://botverse.cloud) — 
 
 - **Video transcoding** — MP4 (H.264), WebM (VP9), ProRes 422, GIF, MP3 extraction · $0.25/job
 - **Document conversion** — Markdown ↔ DOCX ↔ PDF ↔ HTML ↔ XLSX · $0.05/file
-- **Transcription** — speaker-labelled transcripts (diarization + AI speaker naming) → txt/srt/vtt/docx/pdf · ~$5/hour
+- **Transcription** — speaker-labelled transcripts (diarization + AI speaker naming) → txt/srt/vtt/docx/pdf · ~$3/hour
 
 Two ways to use it: an **MCP server** for your AI agents, and a **`botverse` CLI** for the shell — evaluation, CI/CD, cron, scripts, and local coding agents. No AWS. No FFmpeg. No infrastructure.
 
@@ -93,7 +93,7 @@ Globs and multiple `--to` formats run as a batch.
 
 - Video transcode (≤5 min): **$0.25/job**
 - Video overage: **+$0.08/min**
-- ProRes 422: **$0.50/job**
+- ProRes 422: **$0.35/source-min** ($0.50 min)
 - Document conversion: **$0.05/file**
 
 Credits never expire. [Full pricing →](https://botverse.cloud/pricing)
