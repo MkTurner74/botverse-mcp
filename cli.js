@@ -12,6 +12,7 @@
  *   botverse convert *.md --to docx,pdf -o ./out
  *   botverse transcode clip.mov --to mp4 -o ./out
  *   botverse transcribe call.mp4 --to docx --attendees "Sarah Chen,Mike Torres"
+ *   botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25
  *   botverse balance
  *
  * NOTE: this needs outbound network to botverse.cloud and S3. It does NOT work inside
@@ -25,7 +26,7 @@ const path = require("path");
 const https = require("https");
 const { URL } = require("url");
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const BASE_URL = process.env.BOTVERSE_MCP_URL || "https://botverse.cloud/mcp";
 
 // ── tiny ANSI helpers ─────────────────────────────────────────────────────────
@@ -174,6 +175,16 @@ async function submitTranscribe(filePath, outFmt, opts) {
   return r.job_id;
 }
 
+async function submitConform(videoPath, audioPath, outFmt, opts) {
+  const videoKey = await uploadFile(videoPath);
+  const audioKey = await uploadFile(audioPath);
+  const r = await mcp("conform_media", {
+    video_object_key: videoKey, audio_object_key: audioKey, output_format: outFmt,
+    ...(opts ? { options: opts } : {}),
+  });
+  return r.job_id;
+}
+
 // ── commands ──────────────────────────────────────────────────────────────────
 async function runBatch(files, formats, submit, outDir) {
   if (!files.length) die("no input files");
@@ -224,6 +235,36 @@ const COMMANDS = {
     if (argv.flags.language) opts.language = argv.flags.language;
     await runBatch(argv.files, fmts, (f, fmt) => submitTranscribe(f, fmt, Object.keys(opts).length ? opts : null), argv.flags.o || argv.flags.out || ".");
   },
+  async conform() {
+    const allowed = ["mp4", "webm", "mov_prores"];
+    const fmt = argv.flags.to;
+    if (!fmt) die(`--to is required (conform). e.g. --to ${allowed[0]}`);
+    if (!allowed.includes(fmt)) die(`unsupported --to "${fmt}". Allowed: ${allowed.join(", ")}`);
+    const [videoPath, audioPath] = argv.files;
+    if (!videoPath || !audioPath) die("conform needs two input files: <video> <audio>. e.g. botverse conform video.mp4 audio.wav --to mp4");
+    if (!fs.existsSync(videoPath)) die(`video file not found: ${videoPath}`);
+    if (!fs.existsSync(audioPath)) die(`audio file not found: ${audioPath}`);
+
+    const opts = {};
+    if (argv.flags.method) opts.method = argv.flags.method;
+    if (argv.flags["target-framerate"]) opts.target_framerate = Number(argv.flags["target-framerate"]);
+    if (argv.flags["duration-policy"]) opts.duration_policy = argv.flags["duration-policy"];
+
+    const outDir = argv.flags.o || argv.flags.out || ".";
+    const base = path.basename(videoPath, path.extname(videoPath));
+    const outPath = path.join(outDir, `${base}.conformed.${fmt}`);
+    const t0 = Date.now();
+    process.stderr.write(dim(`· ${path.basename(videoPath)} + ${path.basename(audioPath)} → ${fmt} …`));
+    try {
+      const jobId = await submitConform(videoPath, audioPath, fmt, Object.keys(opts).length ? opts : null);
+      await poll(jobId);
+      const bytes = await downloadOutput(jobId, outPath);
+      process.stderr.write("\r" + green("✓ ") + outPath + dim(`  (${(bytes / 1024).toFixed(0)} KB, ${((Date.now() - t0) / 1000).toFixed(1)}s)`).padEnd(20) + "\n");
+    } catch (e) {
+      process.stderr.write("\r" + red("✗ ") + `${path.basename(videoPath)} + ${path.basename(audioPath)} → ${fmt}` + dim("  " + (e.message || e)) + "\n");
+      process.exitCode = 1;
+    }
+  },
   async balance() {
     const r = await mcp("get_wallet_balance", {});
     log(bold("Wallet: ") + green(`$${Number(r.balance_usd).toFixed(2)}`) + (r.auto_refill_enabled ? dim("  (auto-refill on)") : ""));
@@ -237,6 +278,7 @@ ${bold("Usage:")}
   botverse convert    <files…> --to <fmt[,fmt]> [-o dir]
   botverse transcode  <files…> --to <fmt> [--resolution 1080p] [-o dir]
   botverse transcribe <files…> --to <fmt> [--attendees "A,B"] [--language en-US] [-o dir]
+  botverse conform    <video> <audio> --to <fmt> [--method m] [--target-framerate n] [--duration-policy p] [-o dir]
   botverse balance
 
 ${bold("Auth:")}  export BOTVERSE_API_KEY=bv_live_…   (or --api-key)
@@ -246,6 +288,10 @@ ${bold("Examples:")}
   ${cyan("botverse convert *.md --to docx,pdf -o ./out")}
   ${cyan("botverse transcode clip.mov --to mp4 -o ./out")}
   ${cyan("botverse transcribe call.mp4 --to docx --attendees \"Sarah Chen,Mike Torres\"")}
+  ${cyan("botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25")}
+
+${bold("Conform methods:")} mux (default) | resample_video | interpolate_video | speed_conform
+${bold("Conform duration-policy:")} shortest (default) | match_video
 
 Docs: https://botverse.cloud/docs/cli`);
 }

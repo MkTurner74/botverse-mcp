@@ -7,6 +7,7 @@ MCP server **and command-line tool** for [Botverse](https://botverse.cloud) — 
 ## What it does
 
 - **Video transcoding** — MP4 (H.264), WebM (VP9), ProRes 422, GIF, MP3 extraction · $0.25/job
+- **Video/audio conform** — mux a separate video and audio source into one output, reconciling frame-rate and duration mismatches (including true pulldown-style speed conforms, e.g. 24→25fps) · $0.30/job
 - **Document conversion** — Markdown ↔ DOCX ↔ PDF ↔ HTML ↔ XLSX · $0.05/file
 - **Transcription** — speaker-labelled transcripts (diarization + AI speaker naming) → txt/srt/vtt/docx/pdf · ~$3/hour
 
@@ -65,6 +66,7 @@ npx botverse convert report.md --to pdf
 npx botverse convert *.md --to docx,pdf -o ./out
 npx botverse transcode clip.mov --to mp4 -o ./out
 npx botverse transcribe call.mp4 --to docx --attendees "Sarah Chen,Mike Torres"
+npx botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25
 npx botverse balance
 ```
 
