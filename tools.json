@@ -350,6 +350,106 @@
     }
   },
   {
+    "name": "conform_splice_from_url",
+    "description": "Concatenate an ordered list of video and/or still-image segments (all public HTTPS URLs) into one continuous, fresh-encoded output — the video 'splice' step. Put an image segment first for a head slate/bumper, last for a tail slate/end card, or in the middle for a mid-roll insert/cutaway — or use all-video segments to splice two or more real clips together back-to-back. Each segment is {type: 'video', url} or {type: 'image', url, duration_seconds}. Needs at least 2 segments (max 8) and at least one type 'video' segment — its resolution and frame rate become the output's defaults. Segments are scaled to fit and letterboxed (not stretched) if aspect ratios differ; any segment without audio gets a matching silent track synthesised. Output formats: mp4, webm, mov_prores. Returns a job_id — poll get_job_status until 'complete', then get_download_url.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "segments": {
+          "type": "array",
+          "description": "Ordered list of segments, played in array order. At least one must be type 'video'.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["video", "image"] },
+              "url": { "type": "string", "description": "Public HTTPS URL of this segment's source file." },
+              "duration_seconds": { "type": "number", "description": "Required for type 'image': how long the still holds, in seconds (0.5–60). Ignored for type 'video'." }
+            },
+            "required": ["type", "url"]
+          }
+        },
+        "output_format": {
+          "type": "string",
+          "enum": ["mp4", "webm", "mov_prores"],
+          "description": "mp4 (H.264/AAC), webm (VP9/Opus), or mov_prores (ProRes 422)."
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "number" },
+            "height": { "type": "number" },
+            "framerate": { "type": "number" },
+            "bitrate": { "type": "string" },
+            "audio_bitrate": { "type": "string" },
+            "h264_profile": { "type": "string", "enum": ["baseline", "main", "high"] }
+          }
+        }
+      },
+      "required": ["segments", "output_format"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string", "description": "Unique identifier for this job. Pass to get_job_status and get_download_url." },
+        "status": { "type": "string", "enum": ["queued", "processing"], "description": "Initial job state." },
+        "estimated_cost_usd": { "type": "number" }
+      },
+      "required": ["job_id", "status"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "conform_splice_media",
+    "description": "Concatenate an ordered list of already-uploaded video and/or still-image segments (all from get_upload_url) into one continuous, fresh-encoded output. Same segment shape, slate/bumper/end-card/insert use cases, and options as conform_splice_from_url — use for local files or files too large to fetch by URL. Poll get_job_status until 'complete', then get_download_url.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "segments": {
+          "type": "array",
+          "description": "Ordered list of segments, played in array order. At least one must be type 'video'.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["video", "image"] },
+              "object_key": { "type": "string", "description": "The object_key returned by get_upload_url for this segment's source file." },
+              "duration_seconds": { "type": "number", "description": "Required for type 'image': how long the still holds, in seconds (0.5–60). Ignored for type 'video'." }
+            },
+            "required": ["type", "object_key"]
+          }
+        },
+        "output_format": {
+          "type": "string",
+          "enum": ["mp4", "webm", "mov_prores"],
+          "description": "mp4 (H.264/AAC), webm (VP9/Opus), or mov_prores (ProRes 422)."
+        },
+        "options": {
+          "type": "object",
+          "description": "Same options object as conform_splice_from_url (width, height, framerate, bitrate, audio_bitrate, h264_profile)."
+        }
+      },
+      "required": ["segments", "output_format"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string", "description": "Unique identifier for this job. Pass to get_job_status and get_download_url." },
+        "status": { "type": "string", "enum": ["queued", "processing"], "description": "Initial job state." }
+      },
+      "required": ["job_id", "status"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "get_job_status",
     "description": "Poll the status of a transcode, convert, or transcribe job. Call every 5 seconds until status is 'complete' or 'failed'. Status 'queued' or 'processing' is normal — large files take 5–15 minutes; transcribe reports a live stage (converting audio → transcribing → AI augmenting → rendering). Keep polling indefinitely until a terminal status is reached. Do not stop polling after a fixed number of attempts.",
     "inputSchema": {

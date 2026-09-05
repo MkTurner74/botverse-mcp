@@ -8,6 +8,7 @@ MCP server **and command-line tool** for [Botverse](https://botverse.cloud) — 
 
 - **Video transcoding** — MP4 (H.264), WebM (VP9), ProRes 422, GIF, MP3 extraction · $0.25/job
 - **Video/audio conform** — mux a separate video and audio source into one output, reconciling frame-rate and duration mismatches (including true pulldown-style speed conforms, e.g. 24→25fps) · $0.30/job
+- **Conform splice** — concatenate video and/or still-image segments into one output: head slates/bumpers, tail slates/end cards, mid-roll inserts/cutaways, or joining clips together · from $0.30/job
 - **Document conversion** — Markdown ↔ DOCX ↔ PDF ↔ HTML ↔ XLSX · $0.05/file
 - **Transcription** — speaker-labelled transcripts (diarization + AI speaker naming) → txt/srt/vtt/docx/pdf · ~$3/hour
 
@@ -83,6 +84,10 @@ Globs and multiple `--to` formats run as a batch.
 |---|---|
 | `transcode_from_url` | Transcode video from a public URL |
 | `transcode_video` | Transcode an uploaded video file |
+| `conform_from_url` | Mux a separate video + audio source (public URLs) into one output |
+| `conform_media` | Mux an uploaded video + audio source into one output |
+| `conform_splice_from_url` | Concatenate video/image segments (public URLs) — slates, bumpers, end cards, inserts, joined clips |
+| `conform_splice_media` | Concatenate uploaded video/image segments — same use cases |
 | `convert_content` | Convert document content inline (up to 4 MB; sandbox-safe) |
 | `convert_from_url` | Convert a document from a public URL |
 | `convert_file` | Convert an uploaded document |
