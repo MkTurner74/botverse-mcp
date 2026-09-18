@@ -17,7 +17,7 @@
  *
  * NOTE: this needs outbound network to botverse.cloud and S3. It does NOT work inside
  * sandboxed agent environments (claude.ai / Claude Desktop) whose egress is allowlisted —
- * there, use the MCP tools (convert_content / get_output_content) instead.
+ * there, use the MCP tools (e.g. convert_content) instead.
  */
 
 "use strict";
@@ -26,7 +26,7 @@ const path = require("path");
 const https = require("https");
 const { URL } = require("url");
 
-const VERSION = "1.2.0";
+const VERSION = "1.5.0";
 const BASE_URL = process.env.BOTVERSE_MCP_URL || "https://botverse.cloud/mcp";
 
 // ── tiny ANSI helpers ─────────────────────────────────────────────────────────
@@ -217,6 +217,9 @@ function parseFormats(flag, allowed, label) {
   return fmts;
 }
 
+// TODO: splice CLI command (conform_splice_from_url / conform_splice_media) — needs a CLI
+// arg design for an ordered list of mixed video/image segments (with per-image durations)
+// that doesn't yet have a clean, unambiguous flag/positional convention. Skipped for now.
 const COMMANDS = {
   async convert() {
     const fmts = parseFormats(argv.flags.to, ["docx", "pdf", "html", "txt", "md", "rst", "xlsx"], "convert");
