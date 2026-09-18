@@ -26,7 +26,7 @@ const path = require("path");
 const https = require("https");
 const { URL } = require("url");
 
-const VERSION = "1.5.0";
+const VERSION = "1.5.1";
 const BASE_URL = process.env.BOTVERSE_MCP_URL || "https://botverse.cloud/mcp";
 
 // ── tiny ANSI helpers ─────────────────────────────────────────────────────────
