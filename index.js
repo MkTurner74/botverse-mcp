@@ -23,7 +23,7 @@ const { URL } = require("url");
 const CONNECTOR_URL = process.env.BOTVERSE_CONNECTOR_URL;
 const API_KEY = process.env.BOTVERSE_API_KEY;
 const BASE_URL = "https://botverse.cloud/mcp";
-const VERSION = "1.5.1";
+const VERSION = "1.5.2";
 
 let TOOLS = [];
 try {
