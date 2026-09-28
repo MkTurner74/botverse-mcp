@@ -1,0 +1,35 @@
+# Publishes botverse-mcp to npm from GitHub, so no machine needs npm login or
+# a security key. Uses npm trusted publishing (GitHub OIDC): no NPM_TOKEN secret.
+#
+# One-time setup on npmjs.com (needs one login from a machine with the key):
+#   botverse-mcp -> Settings -> Trusted Publisher -> GitHub Actions
+#   owner MkTurner74, repo botverse-mcp, workflow publish-npm.yml
+#
+# Run: gh workflow run publish-npm.yml --repo MkTurner74/botverse-mcp
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC token for npm trusted publishing
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Skip if this version is already on npm
+        id: check
+        run: |
+          V=$(node -p "require('./package.json').version")
+          if npm view "botverse-mcp@$V" version >/dev/null 2>&1; then
+            echo "botverse-mcp@$V is already published"; echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.skip != 'true'
+        run: npm publish --provenance --access public
