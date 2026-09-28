@@ -75,7 +75,7 @@ npx botverse balance
 Each job uploads → polls → downloads the finished file to `-o` (default: current dir).
 Globs and multiple `--to` formats run as a batch.
 
-> **Sandbox note:** the CLI needs outbound network to `botverse.cloud` and S3, so it does
+> **Sandbox note:** the CLI needs outbound network to `botverse.cloud` and Botverse's file storage host, so it does
 > **not** run inside sandboxed agent environments (claude.ai / Claude Desktop), whose
 > egress is allowlisted. There, use the MCP tools (e.g. `convert_content`) instead.
 

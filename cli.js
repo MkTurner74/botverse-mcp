@@ -15,7 +15,7 @@
  *   botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25
  *   botverse balance
  *
- * NOTE: this needs outbound network to botverse.cloud and S3. It does NOT work inside
+ * NOTE: this needs outbound network to botverse.cloud and Botverse's file storage host. It does NOT work inside
  * sandboxed agent environments (claude.ai / Claude Desktop) whose egress is allowlisted —
  * there, use the MCP tools (e.g. convert_content) instead.
  */
@@ -96,7 +96,7 @@ async function mcp(tool, args) {
   return typeof text === "string" ? JSON.parse(text) : text;
 }
 
-// ── S3 multipart upload (presigned POST) ──────────────────────────────────────
+// ── File upload (presigned POST) ──────────────────────────────────────────
 async function uploadFile(filePath) {
   const filename = path.basename(filePath);
   const ext = EXT_OF(filename);
@@ -118,7 +118,7 @@ async function uploadFile(filePath) {
     body,
   });
   if (status !== 204 && status !== 201 && status !== 200) {
-    throw new Error(`S3 upload failed (HTTP ${status}): ${buffer.toString().slice(0, 200)}`);
+    throw new Error(`Upload failed (HTTP ${status}): ${buffer.toString().slice(0, 200)}`);
   }
   return up.object_key;
 }
@@ -149,7 +149,7 @@ async function downloadOutput(jobId, outPath) {
 async function submitConvert(filePath, outFmt) {
   const ext = EXT_OF(filePath);
   const size = fs.statSync(filePath).size;
-  // Small text files go inline (no upload round-trip); large or binary go via S3.
+  // Small text files go inline (no upload round-trip); large or binary go via presigned upload.
   if (TEXT_INPUTS.has(ext) && size <= MAX_INLINE) {
     const r = await mcp("convert_content", {
       content: fs.readFileSync(filePath, "utf8"),
