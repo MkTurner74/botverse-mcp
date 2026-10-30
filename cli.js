@@ -26,7 +26,7 @@ const path = require("path");
 const https = require("https");
 const { URL } = require("url");
 
-const VERSION = "1.5.2";
+const VERSION = "1.5.3";
 const BASE_URL = process.env.BOTVERSE_MCP_URL || "https://botverse.cloud/mcp";
 
 // ── tiny ANSI helpers ─────────────────────────────────────────────────────────
@@ -38,14 +38,24 @@ const log = (...a) => process.stderr.write(a.join(" ") + "\n");
 function die(msg) { log(red("error: ") + msg); process.exit(1); }
 
 // ── format maps ───────────────────────────────────────────────────────────────
+// Upload Content-Type per extension. get_upload_url only accepts the MIME types on
+// the backend's allowlist (plus application/octet-stream), and the presigned POST
+// requires the file part to carry exactly that type. Only list types the backend
+// accepts: anything else (wav, flac, wma, aac, ogg, images…) uploads as
+// application/octet-stream. The workers probe the file itself, so the generic
+// type is fine.
 const CONTENT_TYPES = {
   md: "text/markdown", markdown: "text/markdown", html: "text/html", htm: "text/html",
-  rst: "text/x-rst", txt: "text/plain", doc: "application/msword",
+  rst: "text/x-rst", txt: "text/plain",
+  doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", avi: "video/x-msvideo",
-  mkv: "video/x-matroska", m4v: "video/x-m4v", wav: "audio/wav", m4a: "audio/mp4",
-  mp3: "audio/mpeg", flac: "audio/flac", wma: "audio/x-ms-wma",
+  mkv: "video/x-matroska", m4v: "video/x-m4v", m4a: "audio/mp4", mp3: "audio/mpeg",
 };
+const GENERIC_TYPE = "application/octet-stream";
 const TEXT_INPUTS = new Set(["md", "markdown", "html", "htm", "rst", "txt"]);
 const EXT_OF = (f) => (path.extname(f).slice(1) || "").toLowerCase();
 const MAX_INLINE = 4 * 1024 * 1024; // proxy inline ceiling
@@ -100,7 +110,7 @@ async function mcp(tool, args) {
 async function uploadFile(filePath) {
   const filename = path.basename(filePath);
   const ext = EXT_OF(filename);
-  const ct = CONTENT_TYPES[ext] || "application/octet-stream";
+  const ct = CONTENT_TYPES[ext] || GENERIC_TYPE;
   const up = await mcp("get_upload_url", { filename, content_type: ct });
   const fields = up.upload_fields || {};
   const fileBuf = fs.readFileSync(filePath);
@@ -285,6 +295,7 @@ ${bold("Usage:")}
   botverse balance
 
 ${bold("Auth:")}  export BOTVERSE_API_KEY=bv_live_…   (or --api-key)
+${bold("Run without installing:")}  npx -p botverse-mcp botverse <command> …
 
 ${bold("Examples:")}
   ${cyan("botverse convert report.md --to pdf")}
@@ -296,7 +307,16 @@ ${bold("Examples:")}
 ${bold("Conform methods:")} mux (default) | resample_video | interpolate_video | speed_conform
 ${bold("Conform duration-policy:")} shortest (default) | match_video
 
-Docs: https://botverse.cloud/docs/cli`);
+${bold("Prices:")} (prepaid wallet; free to try with a $1 credit, no card)
+  transcode   $0.25/job up to 5 min, then $0.08/min · ProRes $0.35/min ($0.50 min)
+  conform     $0.30/job up to 5 min, then $0.08/min
+  convert     $0.05/file
+  transcribe  $0.05/audio-min (~$3/hour), speaker-naming included · DOCX +$0.10, PDF +$0.15
+
+Splice, frames-to-video and multi-step workflows are available through the MCP tools
+(conform_splice_*, assemble_sequence, submit_workflow). See the README.
+
+Docs: https://botverse.cloud/docs/cli · Pricing: https://botverse.cloud/pricing`);
 }
 
 // ── arg parsing ───────────────────────────────────────────────────────────────
