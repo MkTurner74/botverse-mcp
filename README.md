@@ -12,7 +12,7 @@ MCP server **and command-line tool** for [Botverse](https://botverse.cloud): med
 - **Video/audio conform** — mux a separate video and audio source into one output and reconcile frame-rate and duration mismatches, including pulldown-style speed conforms (e.g. 24→25fps) · $0.30/job
 - **Splice** — join video and still-image segments into one output: head slates and bumpers, tail slates and end cards, mid-roll inserts, or clips back to back · from $0.30/job
 - **Frames to video** — assemble an ordered sequence of PNG/JPG frames into MP4, WebM or GIF · $0.15/job
-- **Document conversion** — Markdown, HTML, reStructuredText, TXT and DOCX to DOCX, PDF, HTML, TXT, MD, RST or XLSX. Word, PowerPoint and Excel files render to PDF with full page layout, and Excel PDFs honor the workbook's print areas · $0.05/file
+- **Document conversion** — Markdown, HTML, reStructuredText, TXT, Word (DOC/DOCX), Excel (XLSX) and PowerPoint (PPT/PPTX) to DOCX, PDF, HTML, TXT, MD, RST or XLSX. Office files render to PDF with full page layout, Excel PDFs honor the workbook's print areas, and PowerPoint converts to PDF only · $0.05/file
 - **Transcription** — speaker-labelled transcripts with diarization and AI speaker-naming from your attendee list, as TXT, JSON, SRT, VTT, DOCX or PDF · $0.05/audio-min (~$3/hour)
 - **Workflows** — chain transcode, conform, splice, convert and transcribe steps into one server-side job, with dependency ordering and parallel branches
 
@@ -78,15 +78,17 @@ evaluation, automation and local coding agents.
 ```bash
 export BOTVERSE_API_KEY=bv_live_…        # or BOTVERSE_CONNECTOR_URL=…?token=bv_sess_…
 
-npx botverse convert report.md --to pdf
-npx botverse convert *.md --to docx,pdf -o ./out
-npx botverse transcode clip.mov --to mp4 -o ./out
-npx botverse transcribe call.mp4 --to docx --attendees "Sarah Chen,Mike Torres"
-npx botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25
-npx botverse balance
+npx -p botverse-mcp botverse convert report.md --to pdf
+npx -p botverse-mcp botverse convert *.md --to docx,pdf -o ./out
+npx -p botverse-mcp botverse transcode clip.mov --to mp4 -o ./out
+npx -p botverse-mcp botverse transcribe call.mp4 --to docx --attendees "Sarah Chen,Mike Torres"
+npx -p botverse-mcp botverse conform video.mp4 audio.wav --to mp4 --method speed_conform --target-framerate 25
+npx -p botverse-mcp botverse balance
 ```
 
-Each job uploads, polls, then downloads the finished file to `-o` (default: current dir).
+The package name is `botverse-mcp`, so `npx` needs `-p botverse-mcp`. After `npm i -g botverse-mcp`
+the command is plain `botverse`. Each job uploads, polls, then downloads the finished file to `-o`
+(default: current dir).
 Globs and multiple `--to` formats run as a batch. Splice, frames-to-video and workflows
 are available through the MCP tools.
 
@@ -182,8 +184,8 @@ Example: a two-step conversion chain (URL → DOCX → PDF):
 | Transcription (diarization + AI speaker-naming included) | $0.05/audio-min (~$3/hour), $0.20 minimum |
 | Transcript as formatted DOCX / PDF | +$0.10 / +$0.15 |
 
-Start free with a $1 credit, no card. Top up from $5 when you're ready. Credits never expire and
-there's no subscription. [Full pricing →](https://botverse.cloud/pricing)
+Start free with a $1 credit, no card (the trial credit expires 30 days after signup). Top up from $5
+when you're ready. Paid balance never expires and there's no subscription. [Full pricing →](https://botverse.cloud/pricing)
 
 ## Links
 
