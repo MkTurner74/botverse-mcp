@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.MkTurner74/botverse",
-  "description": "Transcode/conform/splice video, convert docs, transcribe audio for AI agents. Free $1 trial.",
+  "description": "Transcode/conform/splice video, convert docs, transcribe, workflows for AI agents. Free $1 trial.",
   "repository": {
     "url": "https://github.com/MkTurner74/botverse-mcp",
     "source": "github"
   },
-  "version": "1.5.1",
+  "version": "1.5.3",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "botverse-mcp",
-      "version": "1.5.1",
+      "version": "1.5.3",
       "transport": {
         "type": "stdio"
       },
