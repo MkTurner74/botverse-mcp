@@ -26,7 +26,7 @@ const path = require("path");
 const https = require("https");
 const { URL } = require("url");
 
-const VERSION = "1.5.2";
+const VERSION = "1.5.3";
 const BASE_URL = process.env.BOTVERSE_MCP_URL || "https://botverse.cloud/mcp";
 
 // ── tiny ANSI helpers ─────────────────────────────────────────────────────────
@@ -296,7 +296,16 @@ ${bold("Examples:")}
 ${bold("Conform methods:")} mux (default) | resample_video | interpolate_video | speed_conform
 ${bold("Conform duration-policy:")} shortest (default) | match_video
 
-Docs: https://botverse.cloud/docs/cli`);
+${bold("Prices:")} (prepaid wallet; free to try with a $1 credit, no card)
+  transcode   $0.25/job up to 5 min, then $0.08/min · ProRes $0.35/min ($0.50 min)
+  conform     $0.30/job up to 5 min, then $0.08/min
+  convert     $0.05/file
+  transcribe  $0.05/audio-min (~$3/hour), speaker-naming included · DOCX +$0.10, PDF +$0.15
+
+Splice, frames-to-video and multi-step workflows are available through the MCP tools
+(conform_splice_*, assemble_sequence, submit_workflow). See the README.
+
+Docs: https://botverse.cloud/docs/cli · Pricing: https://botverse.cloud/pricing`);
 }
 
 // ── arg parsing ───────────────────────────────────────────────────────────────

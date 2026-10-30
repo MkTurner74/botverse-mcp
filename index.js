@@ -23,7 +23,7 @@ const { URL } = require("url");
 const CONNECTOR_URL = process.env.BOTVERSE_CONNECTOR_URL;
 const API_KEY = process.env.BOTVERSE_API_KEY;
 const BASE_URL = "https://botverse.cloud/mcp";
-const VERSION = "1.5.2";
+const VERSION = "1.5.3";
 
 let TOOLS = [];
 try {
@@ -36,9 +36,14 @@ const SERVER_INFO = {
   name: "Botverse",
   version: VERSION,
   description:
-    "Offload compute-heavy tasks to Botverse — video transcoding and document " +
-    "conversion run server-side and return download links. Video (MP4, WebM, " +
-    "ProRes, MP3, GIF) and documents (Markdown/HTML/DOCX to DOCX, PDF, HTML, XLSX, TXT).",
+    "Offload compute-heavy media and document jobs to Botverse. They run server-side " +
+    "and return download links. Video transcoding (MP4, WebM, ProRes, MP3, GIF); " +
+    "conform (mux a separate video and audio source, reconciling frame-rate/duration " +
+    "mismatches); splice (join video and still-image segments: slates, bumpers, end " +
+    "cards, inserts); image frames to video; document conversion (Markdown/HTML/DOCX " +
+    "and PowerPoint/Excel to DOCX, PDF, HTML, XLSX, TXT); speaker-labelled transcription " +
+    "(TXT, JSON, SRT, VTT, DOCX, PDF); and multi-step workflows that chain these jobs. " +
+    "Public URLs and Dropbox/Google Drive/OneDrive/SharePoint/Box share links auto-resolve.",
 };
 
 function reply(obj) {
